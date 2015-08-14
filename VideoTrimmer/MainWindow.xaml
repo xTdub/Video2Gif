@@ -1,0 +1,35 @@
+﻿<Window x:Class="VideoTrimmer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VideoTrimmer"
+        xmlns:toolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="Video Trimmer" Height="350" Width="550">
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo/>
+    </Window.TaskbarItemInfo>
+    <Grid x:Name="grMain">
+        <Button x:Name="buLoad" Content="Load Video" Height="24" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0" Click="buLoad_Click"/>
+        <TextBlock x:Name="tbFileName" Text="File: N/A" Height="18" VerticalAlignment="Top" Margin="115,14,10,0"/>
+        <TextBlock x:Name="tbDuration" Text="Duration: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,39,0,0"/>
+        <TextBlock Text="Start:" Height="18" Width="35" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,66,0,0"/>
+        <toolkit:DoubleUpDown x:Name="udStartTime" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,62,0,0" Minimum="0.0" Increment="0.5" Value="0.0" ValueChanged="udStartTime_ValueChanged" />
+        <TextBlock Text="Stop:" Height="18" Width="35" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,95,0,0"/>
+        <toolkit:DoubleUpDown x:Name="udStopTime" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,91,0,0" Minimum="1.0" Increment="0.5" Value="0.0" ValueChanged="udStopTime_ValueChanged"/>
+        <TextBlock Text="FPS:" Height="18" Width="35" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,124,0,0"/>
+        <toolkit:DoubleUpDown x:Name="udFramerate" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,120,0,0" Minimum="0.1" Maximum="60" Increment="1" Value="30.0" ValueChanged="udFramerate_ValueChanged"/>
+        <TextBlock Text="Scale:" Height="18" Width="35" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,153,0,0"/>
+        <toolkit:DoubleUpDown x:Name="udScale" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,149,0,0" Minimum="0.1" Maximum="1" Increment="0.25" Value="1.0" ValueChanged="udScale_ValueChanged"/>
+        <Button x:Name="buGetFrame" Content="Get Frame" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,178,0,0" Click="buGetFrame_Click"/>
+        <Button x:Name="buMakeGIF" Content="Make GIF" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,207,0,0" Click="buMakeGIF_Click"/>
+        <!--<MediaElement x:Name="meVid" Margin="10,39,10,10" />-->
+        <!--<mk:MediaDetectorElement x:Name="mdVid" Margin="10,39,10,10"/>-->
+        <Image x:Name="imFrame" Margin="115,62,10,10"/>
+        <TextBlock x:Name="tbEstimate" Text="Estimated Size: N/A" Height="18" Width="200" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="115,39,0,0"/>
+        <TextBlock x:Name="tbProgress" Text="Progress: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,236,0,0"/>
+        <TextBlock x:Name="tbElapse" Text="Elapsed: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,254,0,0"/>
+        <TextBlock x:Name="tbETA" Text="ETA: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,272,0,0"/>
+    </Grid>
+</Window>
