@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using Microsoft.Expression.Encoder;
 using System.Windows.Threading;
 using Gif.Components;
 
@@ -27,7 +26,38 @@ namespace VideoTrimmer
         {
             InitializeComponent();
         }
-        private AudioVideoFile avFile;
+
+        Toasts toast;
+        public Dictionary<string, BitmapPalette> paletteNames;
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            toast = new Toasts();
+            toast.TryCreateShortcut();
+
+            InitColorsDropdown();
+
+            var en = new GifEncoder();
+            var val1 = en.NumBits(256);
+            var val2 = en.NumBits(255);
+        }
+
+        private void InitColorsDropdown()
+        {
+            paletteNames = new Dictionary<string, BitmapPalette>(11);
+            paletteNames.Add("BlackAndWhite", BitmapPalettes.BlackAndWhite);
+            paletteNames.Add("Gray4", BitmapPalettes.Gray4);
+            paletteNames.Add("Gray16", BitmapPalettes.Gray16);
+            paletteNames.Add("Gray256", BitmapPalettes.Gray256);
+            paletteNames.Add("Halftone8", BitmapPalettes.Halftone8);
+            paletteNames.Add("Halftone27", BitmapPalettes.Halftone27);
+            paletteNames.Add("Halftone64", BitmapPalettes.Halftone64);
+            paletteNames.Add("Halftone125", BitmapPalettes.Halftone125);
+            paletteNames.Add("Halftone216", BitmapPalettes.Halftone216);
+            paletteNames.Add("Halftone256", BitmapPalettes.Halftone256);
+            paletteNames.Add("WebPalette", BitmapPalettes.WebPalette);
+            cbPalette.ItemsSource = paletteNames.Keys;
+            cbPalette.SelectedIndex = 9;
+        }
         private MediaPlayer mp;
         private DispatcherTimer timer;
         private string file;
@@ -110,6 +140,7 @@ namespace VideoTrimmer
         //private BitmapImage[] frames;
         private async void buMakeGIF_Click(object sender, RoutedEventArgs e)
         {
+            toast.butter = Path.ChangeExtension(file, ".gif");
             double start = udStartTime.Value.Value;
             double stop = udStopTime.Value.Value;
             double interval = 1 / udFramerate.Value.Value;
@@ -123,14 +154,21 @@ namespace VideoTrimmer
             enc = new AnimatedGifEncoder();
             enc.Start(Path.ChangeExtension(file, ".gif"));
             enc.SetFrameRate((float)udFramerate.Value.Value);
-            enc.SetSize(width,height);
+            enc.SetSize(width, height);
             enc.SetRepeat(0);
-            enc.SetQuality(20);
+            enc.SetQuality(30);
+            //gifCol = new MagickImageCollection();
+            //enc2 = new GifBitmapEncoder();
+            //enc2.Palette = BitmapPalettes.Halftone256;
 
             DateTime stime = DateTime.Now;
             tbProgress.Text = string.Format("Frames: {0}/{1}", 0, frames);
             Queue<double> eta_q = new Queue<double>(10);
             TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+
+            mp.Position = TimeSpan.FromSeconds(start);
+            await Task.Delay(50);
+            RenderBitmapAndCapturePixels(framePixels);
 
             int i = 0;
             for (double t= start; t<= stop; t += interval)
@@ -141,7 +179,12 @@ namespace VideoTrimmer
                 imFrame.Source = img;
                 //frames[i] = img as BitmapImage;
                 //var im2 = new BitmapImage
-                enc.AddFrame(new System.Drawing.Bitmap(BitmapFromSource(img as BitmapSource), width, height));
+                FormatConvertedBitmap fcb = new FormatConvertedBitmap(img as BitmapSource, PixelFormats.Indexed8, paletteNames[cbPalette.SelectedItem as string], 0);
+                //enc2.Frames.Add(BitmapFrame.Create(CreateResizedImage(fcb,width,height) as BitmapSource));
+                enc.AddFrame(new System.Drawing.Bitmap(BitmapFromSource(fcb as BitmapSource), width, height));
+                //var bmp = new System.Drawing.Bitmap(BitmapFromSource(img as BitmapSource), width, height);
+                //gifCol.Add(new MagickImage(new System.Drawing.Bitmap(BitmapFromSource(fcb as BitmapSource), width, height)));
+                //gifCol[i].AnimationDelay = (int)(interval * 100);
 
                 i++;
                 TaskbarItemInfo.ProgressValue = (double)i / frames;
@@ -151,10 +194,51 @@ namespace VideoTrimmer
                 tbElapse.Text = string.Format("Elapsed: {0:mm\\:ss}", elapsed);
                 tbETA.Text = string.Format("ETA: {0:mm\\:ss}", TimeSpan.FromTicks((long)(eta_q.Average()*(frames-i))));
             }
+            //FileStream fs = new FileStream(Path.ChangeExtension(file, ".gif"), FileMode.Create);
+            //enc2.Save(fs);
+            //fs.Close();
+            //fs.Dispose();
             enc.Finish();
+            //QuantizeSettings qset = new QuantizeSettings();
+            //qset.Colors = 256;
+            //gifCol.Quantize(qset);
+            //gifCol.Optimize();
+            //gifCol.Write(Path.ChangeExtension(file, ".gif"));
+
             TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
-            tbETA.Text = "ETA: N/A";
-            System.Media.SystemSounds.Beep.Play();
+            tbETA.Text = "ETA: Finished";
+            toast.ShowToast(string.Format("Finished processing \"{0}\"", Path.GetFileName(file)));
+            //System.Media.SystemSounds.Beep.Play();
+        }
+
+        /// <summary>
+        /// Creates a new ImageSource with the specified width/height
+        /// </summary>
+        /// <param name="source">Source image to resize</param>
+        /// <param name="width">Width of resized image</param>
+        /// <param name="height">Height of resized image</param>
+        /// <returns>Resized image</returns>
+        ImageSource CreateResizedImage(ImageSource source, int width, int height)
+        {
+            // Target Rect for the resize operation
+            Rect rect = new Rect(0, 0, width, height);
+
+            // Create a DrawingVisual/Context to render with
+            DrawingVisual drawingVisual = new DrawingVisual();
+            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
+            {
+                drawingContext.DrawImage(source, rect);
+            }
+
+            // Use RenderTargetBitmap to resize the original image
+            RenderTargetBitmap resizedImage = new RenderTargetBitmap(
+                (int)rect.Width, (int)rect.Height,  // Resized dimensions
+                96, 96,                             // Default DPI values
+                PixelFormats.Default);              // Default pixel format
+            resizedImage.Render(drawingVisual);
+
+            // Return the resized image
+            return resizedImage;
         }
 
         private System.Drawing.Bitmap BitmapFromSource(BitmapSource bitmapsource)
@@ -203,6 +287,5 @@ namespace VideoTrimmer
             tbEstimate.Text = String.Format("Size Estimate: {0} frames, {1} KB", frames, bytes / 1024);
         }
 
-        
     }
 }
