@@ -101,6 +101,8 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="GifEncoder.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="LZWEncoder.cs" />
     <Compile Include="ShellHelpers.cs" />
     <Compile Include="Toasts.cs" />
     <Page Include="MainWindow.xaml">

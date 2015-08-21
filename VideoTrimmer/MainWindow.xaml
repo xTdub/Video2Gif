@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:VideoTrimmer"
         xmlns:toolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="Video Trimmer" Height="446.724" Width="627.778" Loaded="Window_Loaded">
+        Title="Video Trimmer" Height="520" Width="860" Loaded="Window_Loaded">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo/>
     </Window.TaskbarItemInfo>
