@@ -1,15 +1,9 @@
-﻿using DesktopToastsSample.ShellHelpers;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
-using MS.WindowsAPICodePack.Internal;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
+using DesktopToastsSample.ShellHelpers;
+using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
+using MS.WindowsAPICodePack.Internal;
 using Windows.Data.Xml.Dom;
 using Windows.UI.Notifications;
 

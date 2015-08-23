@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -13,21 +9,6 @@ namespace VideoTrimmer
 {
     static class Helpers
     {
-        public static Bitmap BitmapImage2Bitmap(BitmapImage bitmapImage)
-        {
-            // BitmapImage bitmapImage = new BitmapImage(new Uri("../Images/test.png", UriKind.Relative));
-
-            using (MemoryStream outStream = new MemoryStream())
-            {
-                BitmapEncoder enc = new BmpBitmapEncoder();
-                enc.Frames.Add(BitmapFrame.Create(bitmapImage));
-                enc.Save(outStream);
-                System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(outStream);
-
-                return new Bitmap(bitmap);
-            }
-        }
-
         /// <summary>
         /// Creates a new ImageSource with the specified width/height
         /// </summary>
@@ -58,19 +39,31 @@ namespace VideoTrimmer
             return resizedImage;
         }
 
-        public static System.Drawing.Bitmap BitmapFromSource(BitmapSource bitmapsource)
+        /// <summary>
+        /// Covnert from a WPF <c>System.Windows.Media.BitmapImage</c> to a GDI <c>System.Drawing.Bitmap</c>
+        /// </summary>
+        /// <param name="bitmapsource">WPF <c>BitmapSource</c></param>
+        /// <returns>GDI <c>Bitmap</c></returns>
+        public static Bitmap BitmapFromSource(BitmapSource bitmapsource)
         {
-            System.Drawing.Bitmap bitmap;
+            Bitmap bitmap;
             using (MemoryStream outStream = new MemoryStream())
             {
                 BitmapEncoder enc = new BmpBitmapEncoder();
                 enc.Frames.Add(BitmapFrame.Create(bitmapsource));
                 enc.Save(outStream);
-                bitmap = new System.Drawing.Bitmap(outStream);
+                bitmap = new Bitmap(outStream);
             }
             return bitmap;
         }
 
+        /// <summary>
+        /// Replace a chunk of this array with the contents of another
+        /// </summary>
+        /// <param name="arr">The current array</param>
+        /// <param name="start">Index in the current array to start the replacement</param>
+        /// <param name="src">The array to copy</param>
+        /// <returns></returns>
         public static Array Replace(this Array arr, int start, Array src)
         {
             if (src == null) throw new ArgumentNullException("src");
