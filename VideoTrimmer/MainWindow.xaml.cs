@@ -44,8 +44,18 @@ namespace VideoTrimmer
             paletteNames.Add("Halftone216", BitmapPalettes.Halftone216);
             paletteNames.Add("Halftone256", BitmapPalettes.Halftone256);
             paletteNames.Add("WebPalette", BitmapPalettes.WebPalette);
+
+            paletteNames.Add("Auto2", null);
+            paletteNames.Add("Auto4", null);
+            paletteNames.Add("Auto8", null);
+            paletteNames.Add("Auto16", null);
+            paletteNames.Add("Auto32", null);
+            paletteNames.Add("Auto64", null);
+            paletteNames.Add("Auto128", null);
+            paletteNames.Add("Auto256", null);
+
             cbPalette.ItemsSource = paletteNames.Keys;
-            cbPalette.SelectedIndex = 9;
+            cbPalette.SelectedIndex = 18;
         }
         private MediaPlayer mp;
         private string file;
@@ -114,10 +124,15 @@ namespace VideoTrimmer
             // Return the bitmap
             return renderTargetBitmap;
         }
-
+        private string outfile;
+        private bool inProgress;
+        private bool abort;
+        private MemoryStream fileData;
         private async void buMakeGIF_Click(object sender, RoutedEventArgs e)
         {
             if (mp == null) return;
+            inProgress = true;
+            abort = false;
             toast.butter = Path.ChangeExtension(file, ".gif");
             double start = udStartTime.Value.Value;
             double stop = udStopTime.Value.Value;
@@ -129,27 +144,36 @@ namespace VideoTrimmer
             int height = (int)(mp.NaturalVideoHeight * scale);
             int width = (int)(mp.NaturalVideoWidth * scale);
             int frames = (int)((stop - start) * udFramerate.Value.Value);
+            
+            mp.Position = TimeSpan.FromSeconds(start);
+            await Task.Delay(100);
+            var sample = RenderBitmapAndCapturePixels(framePixels);
 
             var palette = paletteNames[cbPalette.SelectedItem as string];
-            var gifEn = new GifEncoder(width, height, (float)outfps, palette);
-            var outfile = Path.ChangeExtension(file, ".gif");
-            if (!gifEn.SetFile(outfile))
+            if(palette == null)
             {
-                MessageBox.Show("Error setting the output file");
-                return;
+                int colors = int.Parse((cbPalette.SelectedItem as string).Substring(4));
+                palette = new BitmapPalette(sample as BitmapSource, colors);
             }
+
+            var gifEn = new GifEncoder(width, height, (float)outfps, palette);
+            outfile = Path.ChangeExtension(file, ".gif");
+            //if (!gifEn.SetFile(outfile))
+            //{
+            //    MessageBox.Show("Error setting the output file");
+            //    return;
+            //}
+            fileData = new MemoryStream();
+            gifEn.SetStream(fileData);
             gifEn.Start(frames);
 
             updateProgress(gifEn, frames, file);
 
-            mp.Position = TimeSpan.FromSeconds(start);
-            await Task.Delay(100);
-            RenderBitmapAndCapturePixels(framePixels);
-            
             for (int i=0; i<frames;i++)
             {
+                if (abort) return;
                 mp.Position = TimeSpan.FromSeconds(start + interval * i);
-                await Task.Delay(100);
+                await Task.Delay(50);
                 var img = RenderBitmapAndCapturePixels(framePixels);
                 imFrame.Source = img;
 
@@ -167,6 +191,12 @@ namespace VideoTrimmer
 
             do
             {
+                if (abort)
+                {
+                    gifEn.Abort();
+                    gifEn = null;
+                    return;
+                }
                 TaskbarItemInfo.ProgressValue = (double)gifEn.CompletedFrames / frames;
                 var elapsed = DateTime.Now - stime;
                 eta_q.Enqueue((double)elapsed.Ticks / (gifEn.CompletedFrames == 0 ? 1 : gifEn.CompletedFrames));
@@ -179,10 +209,28 @@ namespace VideoTrimmer
             tbProgress.Text = string.Format("Frames: {0}/{1}", gifEn.CompletedFrames, frames);
 
             gifEn.Finish();
+            using (var fileStream = new FileStream(outfile, FileMode.Create, FileAccess.Write))
+            {
+                fileData.Position = 0;
+                fileData.CopyTo(fileStream);
+            }
+            fileData.Dispose();
+            fileData = null;
 
             TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
             tbETA.Text = "ETA: Finished";
             toast.ShowToast(string.Format("Finished processing \"{0}\"", Path.GetFileName(file)));
+            inProgress = false;
+        }
+
+        private async void buStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (!inProgress) return;
+            abort = true;
+            await Task.Delay(200);
+            fileData.Dispose();
+            fileData = null;
+            tbETA.Text = "ETA: Aborted";
         }
 
         private void udStartTime_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

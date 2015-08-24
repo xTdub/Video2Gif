@@ -85,6 +85,7 @@ namespace VideoTrimmer
         /// Queue of frames ready to be processed
         /// </summary>
         public Queue<ImageData> ImageQueue;
+        private string OutputFile;
         
         /// <summary>
         /// Creates an empty instance of the <c>GifEncoder</c>
@@ -120,9 +121,9 @@ namespace VideoTrimmer
         }
         ~GifEncoder()
         {
-            if (InternalStream)
+            if (InternalStream && DataStream != null)
             {
-                DataStream.Close();
+                //DataStream.Close();
                 DataStream.Dispose();
                 DataStream = null;
             }
@@ -154,6 +155,7 @@ namespace VideoTrimmer
             {
                 DataStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
                 InternalStream = true;
+                OutputFile = path;
                 return true;
             }
             catch (IOException ioex)
@@ -213,7 +215,7 @@ namespace VideoTrimmer
             if (!Ready) return;
             if (!Animated && FrameCount == 1) return;
             if (image.PixelHeight != Height || image.PixelWidth != Width) return;
-            if (image.Palette != ColorPalette) return;
+            //if (image.Palette != ColorPalette) return;
 
             ImageData dat = new ImageData();
             dat.Width = image.PixelWidth;
@@ -319,6 +321,19 @@ namespace VideoTrimmer
 
             DataStream.WriteByte(0x3B);
             DataStream.Flush();
+        }
+        public void Abort()
+        {
+            if(EncoderThread != null) EncoderThread.Abort();
+            
+            if (InternalStream)
+            {
+                DataStream.Flush();
+                DataStream.Dispose();
+                DataStream = null;
+                File.Delete(OutputFile);
+            }
+            else DataStream = null;
         }
 
         /// <summary>

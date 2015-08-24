@@ -27,10 +27,11 @@
         <toolkit:DoubleUpDown x:Name="udOutFramerate" Height="24" Width="47" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="63,207,0,0" Minimum="0.1" Maximum="60" Increment="1" Value="30.0" ValueChanged="udOutFramerate_ValueChanged"/>
         <Button x:Name="buGetFrame" Content="Get Frame" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,236,0,0" Click="buGetFrame_Click"/>
         <Button x:Name="buMakeGIF" Content="Make GIF" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,265,0,0" Click="buMakeGIF_Click"/>
-        <Image x:Name="imFrame" Margin="115,62,10,10"/>
+        <Button x:Name="buStop" Content="Stop" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,294,0,0" Click="buStop_Click"/>
         <TextBlock x:Name="tbEstimate" Text="Estimated Size: N/A" Height="18" Width="200" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="115,39,0,0"/>
-        <TextBlock x:Name="tbProgress" Text="Progress: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,294,0,0"/>
-        <TextBlock x:Name="tbElapse" Text="Elapsed: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,312,0,0"/>
-        <TextBlock x:Name="tbETA" Text="ETA: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,330,0,0"/>
+        <TextBlock x:Name="tbProgress" Text="Progress: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,325,0,0"/>
+        <TextBlock x:Name="tbElapse" Text="Elapsed: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,343,0,0"/>
+        <TextBlock x:Name="tbETA" Text="ETA: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,361,0,0"/>
+        <Image x:Name="imFrame" Margin="115,62,10,10"/>
     </Grid>
 </Window>
