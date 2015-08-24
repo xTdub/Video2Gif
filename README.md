@@ -1,5 +1,5 @@
 # Video2Gif
-This project is a personal project designed to easily convert a video clip to an animated GIF.
+This is a personal project designed to easily convert a video clip to an animated GIF.
 
 ## Features
 #### Implemented
@@ -9,12 +9,13 @@ This project is a personal project designed to easily convert a video clip to an
 * Frame scaling
 * Color palette selection
 * Threaded encoder
+* Automatically generate color palettes to fit content
 
 #### Planned
-* Custom color palette generator
+* None currently
 
 #### Known Issues
-* Generated GIF remains write-locked by the process for some reason
+* None currently
 
 ## Credit
 Created by Tristan Watts-Willis
