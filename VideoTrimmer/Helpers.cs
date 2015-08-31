@@ -75,5 +75,21 @@ namespace VideoTrimmer
             }
             return arr;
         }
+
+        public static bool CompareBitmapSource(BitmapSource im1, BitmapSource im2)
+        {
+            int stride1 = im1.PixelWidth * im1.Format.BitsPerPixel / 8;
+            byte[] arr1 = new byte[im1.PixelHeight * stride1];
+            int stride2 = im2.PixelWidth * im2.Format.BitsPerPixel / 8;
+            byte[] arr2 = new byte[im2.PixelHeight * stride2];
+            if (arr1.Length != arr2.Length) return false;
+            im1.CopyPixels(arr1, stride1, 0);
+            im2.CopyPixels(arr2, stride2, 0);
+            for (int i = 0; i < arr1.Length; i+=20)
+            {
+                if (arr1[i] != arr2[i]) return false;
+            }
+            return true;
+        }
     }
 }

@@ -145,15 +145,15 @@ namespace VideoTrimmer
             int width = (int)(mp.NaturalVideoWidth * scale);
             int frames = (int)((stop - start) * udFramerate.Value.Value);
             
-            mp.Position = TimeSpan.FromSeconds(start);
-            await Task.Delay(100);
-            var sample = RenderBitmapAndCapturePixels(framePixels);
+            //mp.Position = TimeSpan.FromSeconds(start);
+            //await Task.Delay(100);
+            var previmg = RenderBitmapAndCapturePixels(framePixels);
 
             var palette = paletteNames[cbPalette.SelectedItem as string];
             if(palette == null)
             {
                 int colors = int.Parse((cbPalette.SelectedItem as string).Substring(4));
-                palette = new BitmapPalette(sample as BitmapSource, colors);
+                palette = new BitmapPalette(previmg as BitmapSource, colors);
             }
 
             var gifEn = new GifEncoder(width, height, (float)outfps, palette);
@@ -168,13 +168,22 @@ namespace VideoTrimmer
             gifEn.Start(frames);
 
             updateProgress(gifEn, frames, file);
+            ImageSource img;
 
-            for (int i=0; i<frames;i++)
+            for (int i = 0; i < frames; i++)
             {
                 if (abort) return;
                 mp.Position = TimeSpan.FromSeconds(start + interval * i);
-                await Task.Delay(50);
-                var img = RenderBitmapAndCapturePixels(framePixels);
+                int tries = 0;
+                do
+                {
+                    await Task.Delay(75);
+                    img = RenderBitmapAndCapturePixels(framePixels);
+                    tries++;
+                }
+                while (CompareBitmapSource(img as BitmapSource, previmg as BitmapSource) && tries < 5);
+                previmg = img;
+
                 imFrame.Source = img;
 
                 FormatConvertedBitmap fcb = new FormatConvertedBitmap(CreateResizedImage(img as ImageSource, width, height) as BitmapSource, PixelFormats.Indexed8, palette, 0);
@@ -236,14 +245,14 @@ namespace VideoTrimmer
         private void udStartTime_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (mp == null) return;
-            if (udStartTime.Value.Value + 1 > udStopTime.Value.Value) udStopTime.Value = udStartTime.Value + 1;
+            //if (udStartTime.Value.Value + 1 > udStopTime.Value.Value) udStopTime.Value = udStartTime.Value + 1;
             UpdateEstimate();
         }
 
         private void udStopTime_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (mp == null) return;
-            if (udStartTime.Value.Value + 1 > udStopTime.Value.Value) udStartTime.Value = udStopTime.Value - 1;
+            //if (udStartTime.Value.Value + 1 > udStopTime.Value.Value) udStartTime.Value = udStopTime.Value - 1;
             UpdateEstimate();
         }
 
@@ -267,6 +276,17 @@ namespace VideoTrimmer
 
         private void UpdateEstimate()
         {
+            if(!udStartTime.Value.HasValue || !udStopTime.Value.HasValue || !udScale.Value.HasValue || !udOutFramerate.Value.HasValue || !udFramerate.Value.HasValue)
+            {
+                buMakeGIF.IsEnabled = false;
+                return;
+            }
+            else if (udStartTime.Value.Value > udStopTime.Value.Value)
+            {
+                buMakeGIF.IsEnabled = false;
+                return;
+            }
+            else buMakeGIF.IsEnabled = true;
             int frames = (int)((udStopTime.Value.Value - udStartTime.Value.Value) * udFramerate.Value.Value);
             long bytes = (long)(frames * (mp.NaturalVideoHeight * mp.NaturalVideoWidth * (udScale.Value.Value* udScale.Value.Value)));
             tbEstimate.Text = String.Format("Size Estimate: {0} frames, {1} KB", frames, bytes / 1024);
