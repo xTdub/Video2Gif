@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -93,6 +96,7 @@ namespace VideoTrimmer
         private void Mp_MediaOpened(object sender, EventArgs e)
         {
             tbDuration.Text = String.Format("Duration: {0}", udStartTime.Maximum = udStopTime.Maximum = mp.NaturalDuration.TimeSpan.TotalSeconds);
+            udStopTime.Value = udStopTime.Maximum;
         }
 
         private async void buGetFrame_Click(object sender, RoutedEventArgs e)
@@ -212,6 +216,7 @@ namespace VideoTrimmer
                 tbProgress.Text = string.Format("Frames: {0}/{1}", gifEn.CompletedFrames, frames);
                 tbElapse.Text = string.Format("Elapsed: {0:mm\\:ss}", elapsed);
                 tbETA.Text = string.Format("ETA: {0:mm\\:ss}", TimeSpan.FromTicks((long)(eta_q.Average() * (frames - gifEn.CompletedFrames))));
+                this.Title = string.Format("Video Trimmer ({0}%, GIF)", 100 * gifEn.CompletedFrames / frames);
                 await Task.Delay(100);
             }
             while (gifEn.CompletedFrames < frames);
@@ -228,6 +233,7 @@ namespace VideoTrimmer
 
             TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
             tbETA.Text = "ETA: Finished";
+            this.Title = "Video Trimmer";
             toast.ShowToast(string.Format("Finished processing \"{0}\"", Path.GetFileName(file)));
             inProgress = false;
         }
@@ -237,8 +243,11 @@ namespace VideoTrimmer
             if (!inProgress) return;
             abort = true;
             await Task.Delay(200);
-            fileData.Dispose();
-            fileData = null;
+            if (fileData != null)
+            {
+                fileData.Dispose();
+                fileData = null;
+            }
             tbETA.Text = "ETA: Aborted";
         }
 
@@ -292,5 +301,156 @@ namespace VideoTrimmer
             tbEstimate.Text = String.Format("Size Estimate: {0} frames, {1} KB", frames, bytes / 1024);
         }
 
+        private async void buMakeWEBM_Click(object sender, RoutedEventArgs e)
+        {
+            if (mp == null) return;
+            inProgress = true;
+            abort = false;
+            string srcPath = file;
+            string destPath = Path.ChangeExtension(file, ".webm");
+            double start = udStartTime.Value.Value;
+            double stop = udStopTime.Value.Value;
+            double fps = udFramerate.Value.Value;
+            double outfps = udOutFramerate.Value.Value;
+            double interval = 1.0 / fps;
+            double scale = udScale.Value.Value;
+
+            int height = (int)(mp.NaturalVideoHeight * scale);
+            int width = (int)(mp.NaturalVideoWidth * scale);
+            int frames = (int)((stop - start) * udFramerate.Value.Value);
+            int cFrame = 0;
+
+            DateTime stime = DateTime.Now;
+            tbProgress.Text = string.Format("Frames: {0}/{1}", 0, frames);
+            tbETA.Text = "ETA: Starting";
+            Queue<double> eta_q = new Queue<double>(10);
+            TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
+
+            Process ffmpeg = new Process();
+            string args = string.Format("-i \"{0}\" -c:v libvpx -b:v 4000K -vf scale=1280x720 -threads 8 -speed 1 -tile-columns 6 -frame-parallel 1" + //-c:v libvpx-vp9
+                " -auto-alt-ref 1 -lag-in-frames 25 -c:a libopus -b:a 128k -f webm -ss {2} -t {3} -y \"{1}\"", srcPath, destPath, start, stop - start);
+            ffmpeg.StartInfo = new ProcessStartInfo("ffmpeg.exe", args);
+            ffmpeg.StartInfo.UseShellExecute = false;
+            ffmpeg.StartInfo.RedirectStandardInput = true;
+            ffmpeg.StartInfo.RedirectStandardOutput = true;
+            ffmpeg.StartInfo.RedirectStandardError = true;
+            ffmpeg.EnableRaisingEvents = true;
+            string dat = "";
+            Regex rgx = new Regex("frame= *([0-9]+)");
+            ffmpeg.OutputDataReceived += (s, arg) =>
+            {
+                dat += arg.Data;
+            };
+            ffmpeg.ErrorDataReceived += (s, arg) =>
+            {
+                dat += arg.Data;
+                if (arg.Data == null) return;
+                var m = rgx.Match(arg.Data);
+                if (m.Success)
+                {
+                    cFrame = int.Parse(m.Groups[1].Value);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        TaskbarItemInfo.ProgressValue = (double)cFrame / frames;
+                        var elapsed = DateTime.Now - stime;
+                        if(cFrame == 0)
+                        {
+                            stime = DateTime.Now;
+                            return;
+                        }
+                        eta_q.Enqueue((double)elapsed.Ticks / (cFrame == 0 ? 1 : cFrame));
+                        tbProgress.Text = string.Format("Frames: {0}/{1}", cFrame, frames);
+                        tbElapse.Text = string.Format("Elapsed: {0:mm\\:ss}", elapsed);
+                        tbETA.Text = string.Format("ETA: {0:mm\\:ss}", TimeSpan.FromTicks((long)(eta_q.Average() * (frames - cFrame))));
+                        this.Title = string.Format("Video Trimmer ({0}%, WEBM)", 100 * cFrame / frames);
+                    });
+                }
+            };
+            if (ffmpeg.Start())
+            {
+                ffmpeg.BeginOutputReadLine();
+                ffmpeg.BeginErrorReadLine();
+                await Task.Delay(100);
+                MinimizeWindow(ffmpeg.MainWindowHandle);
+                //ffmpeg.WaitForExit();
+                while (!ffmpeg.HasExited)
+                {
+                    if (abort)
+                    {
+                        ffmpeg.Kill();
+                        await Task.Delay(200);
+                        File.Delete(destPath);
+                        inProgress = false;
+                        TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                        return;
+                    }
+                    await Task.Delay(100);
+                }
+
+                TaskbarItemInfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+                tbETA.Text = "ETA: Finished";
+                this.Title = "Video Trimmer";
+                toast.ShowToast(string.Format("Finished processing \"{0}\"", Path.GetFileName(file)));
+            }
+            else
+            {
+                MessageBox.Show("ffmpeg.exe could not start. Make sure it is installed and included in the system PATH variable.",
+                    "FFmpeg error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            inProgress = false;
+        }
+
+        const int SW_SHOWMINNOACTIVE = 7;
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        static void MinimizeWindow(IntPtr handle)
+        {
+            ShowWindow(handle, SW_SHOWMINNOACTIVE);
+        }
+
+        string browseFolder = "";
+        private void buOpenDir_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            {
+                RootFolder = Environment.SpecialFolder.MyVideos
+            };
+            var res = dialog.ShowDialog();
+            if (res != System.Windows.Forms.DialogResult.Cancel)
+            {
+                browseFolder = dialog.SelectedPath;
+                if (!Directory.Exists(browseFolder)) return;
+                tbFolderPath.Text = string.Format("Path: {0}", browseFolder);
+                var files = Directory.GetFiles(browseFolder);
+                lbFileList.ItemsSource = files;
+            }
+        }
+
+        private void lbFileList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            string path = lbFileList.SelectedItem as string;
+            if(lbFileList.SelectedItem != null)
+            {
+                file = path;
+                try
+                {
+                    tbFileName.Text = String.Format("File: {0}", path);
+                    mp = new MediaPlayer();
+                    mp.ScrubbingEnabled = true;
+                    mp.MediaOpened += Mp_MediaOpened;
+                    mp.Open(new Uri(path));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Exception", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                    tbFileName.Text = "File: N/A";
+                    tbDuration.Text = "Duration: N/A";
+                    mp = null;
+                }
+            }
+        }
     }
 }
