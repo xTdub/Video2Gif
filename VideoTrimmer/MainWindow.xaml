@@ -6,13 +6,13 @@
         xmlns:local="clr-namespace:VideoTrimmer"
         xmlns:toolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="Video Trimmer" Height="520" Width="860" Loaded="Window_Loaded">
+        Title="Video Trimmer" Height="520" Width="940" Loaded="Window_Loaded">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo/>
     </Window.TaskbarItemInfo>
     <Grid x:Name="grMain">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="280"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
@@ -32,7 +32,7 @@
             <toolkit:DoubleUpDown x:Name="udFramerate" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,120,0,0" Minimum="0.1" Maximum="60" Increment="1" Value="30.0" ValueChanged="udFramerate_ValueChanged"/>
             <TextBlock Text="Scale:" Height="18" Width="35" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,153,0,0"/>
             <toolkit:DoubleUpDown x:Name="udScale" Height="24" Width="60" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="50,149,0,0" Minimum="0.1" Maximum="1" Increment="0.25" Value="1.0" ValueChanged="udScale_ValueChanged"/>
-            <ComboBox x:Name="cbPalette" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,178,0,0" />
+            <ComboBox x:Name="cbPalette" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,178,0,0" SelectionChanged="cbPalette_SelectionChanged" />
             <TextBlock Text="GIF FPS:" Height="18" Width="48" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,213,0,0"/>
             <toolkit:DoubleUpDown x:Name="udOutFramerate" Height="24" Width="47" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="63,207,0,0" Minimum="0.1" Maximum="60" Increment="1" Value="30.0" ValueChanged="udOutFramerate_ValueChanged"/>
             <Button x:Name="buGetFrame" Content="Get Frame" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,236,0,0" Click="buGetFrame_Click"/>
@@ -43,6 +43,8 @@
             <TextBlock x:Name="tbProgress" Text="Progress: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,352,0,0"/>
             <TextBlock x:Name="tbElapse" Text="Elapsed: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,370,0,0"/>
             <TextBlock x:Name="tbETA" Text="ETA: N/A" Height="18" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,388,0,0"/>
+            <Button x:Name="buMakeMP4" Content="Make MP4" Height="24" Width="100" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,411,0,0" Click="buMakeMP4_Click"/>
+            <CheckBox x:Name="cbPreviewFrame" Content="Preview Frame" IsChecked="True" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,440,0,0" Checked="cbPreviewFrame_CheckChanged" Unchecked="cbPreviewFrame_CheckChanged"/>
             <Image x:Name="imFrame" Margin="115,62,10,10"/>
         </Grid>
     </Grid>
